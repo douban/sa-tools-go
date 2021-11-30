@@ -21,7 +21,9 @@ func main() {
 		flagQuiet   bool
 	)
 
-	subCommands := []*cobra.Command{}
+	subCommands := []*cobra.Command{
+		cmdDisk(),
+	}
 
 	rootCmd := &cobra.Command{
 		Use: "sat",
