@@ -84,7 +84,7 @@ func (c *DiskUsageChecker) getEscapedCheckPath() string {
 }
 
 func (c *DiskUsageChecker) getLockFile() string {
-	return NCDU_JOB_LOCK_PREFIX + "-" + c.getEscapedCheckPath()
+	return NCDU_JOB_LOCK_PREFIX + c.getEscapedCheckPath()
 }
 
 func (c *DiskUsageChecker) getDataFilePath() error {
