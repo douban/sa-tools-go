@@ -29,6 +29,7 @@ sat disk clean`,
 
 func cmdDiskUsage() *cobra.Command {
 	config := &disk.UsageConfig{}
+
 	cmd := &cobra.Command{
 		Use:   "usage",
 		Short: "Disk usage operation",
@@ -40,6 +41,9 @@ if -r/--data-file specified, the ncdu exported data file will be read;
     if no data file within 1 hour found, a check will be performed eventually;
     if -R/--force-read specified, check will be aborted`,
 		Run: func(cmd *cobra.Command, args []string) {
+			if config.NcduDataPath == "" {
+				config.NcduDataPath = disk.SelectNcduDataPath()
+			}
 			checker, err := disk.NewDiskUsageChecker(config, logger)
 			if err != nil {
 				logger.Fatalf("failed to get disk usage checker: %s", err)
@@ -64,12 +68,11 @@ if -r/--data-file specified, the ncdu exported data file will be read;
 				} else {
 					if checker.IsForceRead() {
 						logger.Fatalln("no data file found")
-					} else {
-						logger.Warning("Recent data file not found. Checking disk usage.")
-						err = checker.Check()
-						if err != nil {
-							logger.Fatalf("failed to check disk: %s", err)
-						}
+					}
+					logger.Warning("Recent data file not found. Checking disk usage.")
+					err = checker.Check()
+					if err != nil {
+						logger.Fatalf("failed to check disk: %s", err)
 					}
 				}
 			}
@@ -88,11 +91,25 @@ if -r/--data-file specified, the ncdu exported data file will be read;
 }
 
 func cmdDiskClean() *cobra.Command {
+	var (
+		dryRun   bool
+		dataPath string
+	)
 
 	cmd := &cobra.Command{
 		Use:   "clean",
 		Short: "Clean disk, including outdated ncdu exported data file",
+		Run: func(cmd *cobra.Command, args []string) {
+			if dataPath == "" {
+				dataPath = disk.SelectNcduDataPath()
+			}
+			if err := disk.Clean(dataPath, dryRun, logger); err != nil {
+				logger.Fatalf("failed to clean: %s", err)
+			}
+		},
 	}
+	cmd.Flags().StringVarP(&dataPath, "ncdu-data-path", "p", "", "Path to clean ncdu exported data")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "check files to clean")
 
 	return cmd
 }

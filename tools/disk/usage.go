@@ -43,10 +43,6 @@ func NewDiskUsageChecker(config *UsageConfig, logger *logrus.Logger) (*DiskUsage
 		return nil, errors.Wrap(err, "failed to get check path")
 	}
 	checker.config.CheckPath = p
-
-	if config.NcduDataPath == "" {
-		checker.selectNcduDataPath()
-	}
 	return checker, nil
 }
 
@@ -81,14 +77,6 @@ func (c *DiskUsageChecker) FindLatestExportedData() error {
 	}
 	c.config.DataFile = dataFile
 	return nil
-}
-
-func (c *DiskUsageChecker) selectNcduDataPath() {
-	if _, err := os.Stat("/data"); !os.IsNotExist(err) {
-		c.config.NcduDataPath = "/data"
-		return
-	}
-	c.config.NcduDataPath = "/"
 }
 
 func (c *DiskUsageChecker) getEscapedCheckPath() string {

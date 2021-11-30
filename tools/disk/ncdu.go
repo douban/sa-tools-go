@@ -3,6 +3,7 @@ package disk
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/douban/sa-tools-go/libs/heapq"
@@ -13,6 +14,13 @@ type NcduNode struct {
 	Asize uint64
 	Dsize uint64
 	Ino   uint64
+}
+
+func SelectNcduDataPath() string {
+	if _, err := os.Stat(NCDU_EXPORT_DATA_PATH); !os.IsNotExist(err) {
+		return NCDU_EXPORT_DATA_PATH
+	}
+	return "/"
 }
 
 func TopHugeDirsFromNcdu(topN uint64, raw []byte, parentPath string, maxDepth, depth uint64) (map[string]uint64, uint64, error) {
