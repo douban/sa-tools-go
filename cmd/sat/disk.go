@@ -10,16 +10,14 @@ func cmdDisk() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use: "disk",
-		Example: `e.g.
-sat disk usage
+		Example: `sat disk usage
 sat disk usage -n 5 -d 3
 sat disk usage -r /data1/ncdu-export-%-20160513142844.gz
 sat disk usage -c /tmp
 sat disk usage -p /data
 sat disk usage --force-check
 
-sat disk clean
-`,
+sat disk clean`,
 	}
 
 	cmd.AddCommand(
@@ -34,10 +32,13 @@ func cmdDiskUsage() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "usage",
 		Short: "Disk usage operation",
-		Long: `若没有指定 -p,--ncdu-data-path 则自动选择一个 path
-若指定 -f,--force-check 则进行强制进行 check
-若指定 -r,--data-file 则读指定的 ncdu exported data 文件；反之，自动选择最近的 data 文件，若找不到 1 个小时内的文件，则依然会进行 check
-若指定 -R 则不会进行 check`,
+		Long: `
+if -p/--ncdu-data-path not specified, a path will be selected automatically, typically /data or /
+if -f/--force-check specified, a check will be forced
+if -r/--data-file specified, the ncdu exported data file will be read;
+    otherwise a latest data will be selected;
+    if no data file within 1 hour found, a check will be performed eventually;
+    if -R/--force-read specified, check will be aborted`,
 		Run: func(cmd *cobra.Command, args []string) {
 			checker, err := disk.NewDiskUsageChecker(config, logger)
 			if err != nil {
