@@ -116,7 +116,8 @@ func (c *DiskUsageChecker) checkDataPathAvailable() error {
 }
 
 func (c *DiskUsageChecker) runNcdu() error {
-	ncduCmd := fmt.Sprintf("ncdu -0xo- %s | gzip > %s", c.config.CheckPath, c.config.DataFile)
+	ncduCmd := fmt.Sprintf("/usr/bin/flock -n %s ncdu -0xo- %s | gzip > %s",
+		c.getLockFile(), c.config.CheckPath, c.config.DataFile)
 	p := exec.Command("sh", "-c", ncduCmd)
 	if err := p.Start(); err != nil {
 		return errors.Wrap(err, "failed to start ncdu")
@@ -178,7 +179,7 @@ func (c *DiskUsageChecker) Check() error {
 	if err != nil || !locked {
 		return errors.New("sat disk check job already in running")
 	}
-	defer fileLock.Unlock()
+	fileLock.Unlock()
 
 	if err := c.getDataFilePath(); err != nil {
 		return errors.Wrap(err, "error getting data file path")
