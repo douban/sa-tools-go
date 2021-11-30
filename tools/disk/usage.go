@@ -91,7 +91,7 @@ func (c *DiskUsageChecker) getDataFilePath() error {
 	timeNowStr := time.Now().Format("20060102150405")
 	dataFileName := fmt.Sprintf("ncdu-export-%s-%s.gz", c.getEscapedCheckPath(), timeNowStr)
 	dataFilePath := filepath.Join(c.config.NcduDataPath, dataFileName)
-	_, err := os.OpenFile(dataFilePath, os.O_WRONLY|os.O_CREATE, 0755)
+	_, err := os.OpenFile(dataFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to open data file")
 	}
