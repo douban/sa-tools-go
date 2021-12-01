@@ -24,6 +24,7 @@ func main() {
 
 	subCommands := []*cobra.Command{
 		cmdDisk(),
+		cmdNotify(),
 	}
 
 	rootCmd := &cobra.Command{

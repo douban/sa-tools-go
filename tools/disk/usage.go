@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/douban/sa-tools-go/libs/humanize"
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/douban/sa-tools-go/libs/humanize"
 )
 
 type UsageConfig struct {
