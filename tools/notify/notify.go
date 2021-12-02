@@ -23,21 +23,21 @@ func NewNotifier(config *NotifierConfig, logger *logrus.Logger) *Notifier {
 }
 
 func (n *Notifier) SendEmail(targets ...string) error {
-	n.logger.Infof("email: %s", targets)
-	return nil
+	n.logger.Debugf("send email to: %s", targets)
+	return sendEmail(n.config.Subject, n.config.Content, n.config.From, targets)
 }
 
 func (n *Notifier) SendWecom(targets ...string) error {
-	n.logger.Infof("wecom: %s", targets)
+	n.logger.Debugf("send wecom to: %s", targets)
 	return nil
 }
 
 func (n *Notifier) SendLark(targets ...string) error {
-	n.logger.Infof("lark: %s", targets)
+	n.logger.Debugf("send lark to: %s", targets)
 	return nil
 }
 
 func (n *Notifier) SendTelegram(targets ...string) error {
-	n.logger.Infof("telegram: %s", targets)
+	n.logger.Debugf("send telegram to: %s", targets)
 	return nil
 }
