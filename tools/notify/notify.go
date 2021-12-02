@@ -29,11 +29,6 @@ func (n *Notifier) SendWecom(targets ...string) error {
 	return nil
 }
 
-func (n *Notifier) SendLark(targets ...string) error {
-	n.logger.Infof("send lark to: %s", targets)
-	return nil
-}
-
 func (n *Notifier) SendTelegram(targets ...string) error {
 	n.logger.Infof("send telegram to: %s", targets)
 	return nil

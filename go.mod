@@ -3,6 +3,7 @@ module github.com/douban/sa-tools-go
 go 1.17
 
 require (
+	github.com/go-lark/lark v1.6.0
 	github.com/gofrs/flock v0.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.8.1
