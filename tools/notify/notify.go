@@ -1,35 +1,29 @@
 package notify
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
-type NotifierConfig struct {
+type Notifier interface {
+	SendMessage(message *MessageConfig, targets ...string) error
+}
+
+type MessageConfig struct {
 	Subject  string
 	Content  string
-	Tenant   string
 	From     string
 	Markdown bool
 }
 
-type Notifier struct {
-	config *NotifierConfig
-	logger *logrus.Logger
-}
-
-func NewNotifier(config *NotifierConfig, logger *logrus.Logger) *Notifier {
-	return &Notifier{
-		config: config,
-		logger: logger,
+func GetNotifier(name, tenant string, logger *logrus.Logger) (Notifier, error) {
+	switch name {
+	case "email":
+		return NewEmailNotifier(tenant, logger)
+	case "lark":
+		return NewLarkNotifier(tenant, logger)
 	}
-}
 
-func (n *Notifier) SendWecom(targets ...string) error {
-	n.logger.Infof("send wecom to: %s", targets)
-	return nil
-}
-
-func (n *Notifier) SendTelegram(targets ...string) error {
-	n.logger.Infof("send telegram to: %s", targets)
-	return nil
+	return nil, fmt.Errorf("notifier %s not supported", name)
 }

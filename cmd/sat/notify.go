@@ -6,48 +6,46 @@ import (
 	"github.com/douban/sa-tools-go/tools/notify"
 )
 
+func sendNotification(name, tenant string, message *notify.MessageConfig, target []string) {
+	notifier, err := notify.GetNotifier(name, tenant, logger)
+	if err != nil {
+		logger.Errorf("get %s notifier failed: %s", name, err)
+	}
+	err = notifier.SendMessage(message, target...)
+	if err != nil {
+		logger.Errorf("send %s failed: %s", name, err)
+	}
+}
+
 func cmdNotify() *cobra.Command {
-	config := &notify.NotifierConfig{}
+	message := &notify.MessageConfig{}
 
 	var (
 		flagEmail    []string
 		flagLark     []string
 		flagWecom    []string
 		flagTelegram []string
+		flagTenant   string
 	)
 
 	cmd := &cobra.Command{
 		Use: "notify",
 		Run: func(cmd *cobra.Command, args []string) {
-			notifier := notify.NewNotifier(config, logger)
 			if flagEmail != nil {
-				if err := notifier.SendEmail(flagEmail...); err != nil {
-					logger.Errorf("send email failed: %s", err)
-				}
+				sendNotification("email", flagTenant, message, flagEmail)
 			}
 			if flagLark != nil {
-				if err := notifier.SendLark(flagLark...); err != nil {
-					logger.Errorf("send lark failed: %s", err)
-				}
+				sendNotification("lark", flagTenant, message, flagLark)
 			}
-			if flagWecom != nil {
-				if err := notifier.SendWecom(flagWecom...); err != nil {
-					logger.Errorf("send wecom failed: %s", err)
-				}
-			}
-			if flagTelegram != nil {
-				if err := notifier.SendTelegram(flagTelegram...); err != nil {
-					logger.Errorf("send telegram failed: %s", err)
-				}
-			}
+
 		},
 	}
-	cmd.Flags().StringVarP(&config.Subject, "subject", "s", "sent from sa-notify", "")
-	cmd.Flags().StringVarP(&config.Content, "content", "c", "", "")
-	cmd.Flags().StringVarP(&config.Tenant, "tenant", "t", "", "company user in, used when multiple company or tenant is configured")
-	cmd.Flags().StringVarP(&config.From, "from", "", "", "from address, currently only works for email")
-	cmd.Flags().BoolVarP(&config.Markdown, "markdown", "", false, "use markdown rendering, only lark & wework & telegram supported")
+	cmd.Flags().StringVarP(&message.Subject, "subject", "s", "sent from sa-notify", "")
+	cmd.Flags().StringVarP(&message.Content, "content", "c", "", "")
+	cmd.Flags().StringVarP(&message.From, "from", "", "", "from address, currently only works for email")
+	cmd.Flags().BoolVarP(&message.Markdown, "markdown", "", false, "use markdown rendering, only lark & wework & telegram supported")
 
+	cmd.Flags().StringVarP(&flagTenant, "tenant", "t", "", "company user in, used when multiple company or tenant is configured")
 	cmd.Flags().StringSliceVarP(&flagEmail, "email", "", nil, "")
 	cmd.Flags().StringSliceVarP(&flagLark, "lark", "", nil, "")
 	cmd.Flags().StringSliceVarP(&flagWecom, "wecom", "", nil, "")

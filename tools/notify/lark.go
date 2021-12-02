@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-lark/lark"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/douban/sa-tools-go/libs/secrets"
 )
@@ -22,50 +23,57 @@ type LarkConfig struct {
 	VerificationToken string `yaml:"verification_token"`
 }
 
-func (n *Notifier) SendLark(targets ...string) error {
-	n.logger.Infof("send lark to: %s", targets)
+type LarkNotifier struct {
+	bot    *lark.Bot
+	logger *logrus.Logger
+}
 
-	cfg := LarkTenantConfig{}
+func NewLarkNotifier(tenant string, logger *logrus.Logger) (*LarkNotifier, error) {
+	var cfg LarkTenantConfig
 	err := secrets.Load("lark", &cfg)
 	if err != nil {
-		return errors.Wrap(err, "load lark secrets failed")
+		return nil, errors.Wrap(err, "load lark secrets failed")
 	}
-
-	var tenant string
-	if n.config.Tenant != "" {
-		tenant = n.config.Tenant
-	} else {
+	if tenant == "" {
 		tenant = cfg.Default
 	}
-	tc, ok := cfg.Tenants[tenant]
+	config, ok := cfg.Tenants[tenant]
 	if !ok {
-		return fmt.Errorf("tenant %s not fond in lark secret", tenant)
+		return nil, fmt.Errorf("tenant %s not fond in lark secret", tenant)
 	}
-
-	bot := lark.NewChatBot(tc.AppID, tc.AppSecret)
+	bot := lark.NewChatBot(config.AppID, config.AppSecret)
+	// NOTE: should refresh token periodically if used in long running program
 	_, err = bot.GetTenantAccessTokenInternal(true)
 	if err != nil {
-		return errors.Wrap(err, "get lark access token failed")
+		return nil, errors.Wrap(err, "get lark access token failed")
 	}
 
-	b := lark.NewCardBuilder()
-	card := b.Card(
-		b.Div().Text(b.Text(n.config.Content).LarkMd()),
-	).Indigo().Title(n.config.Subject)
+	return &LarkNotifier{
+		bot:    bot,
+		logger: logger,
+	}, nil
+}
 
+func (n *LarkNotifier) SendMessage(message *MessageConfig, targets ...string) (err error) {
+	n.logger.Infof("send email to: %s", targets)
+
+	b := lark.NewCardBuilder()
 	for _, target := range targets {
 		var om lark.OutcomingMessage
-		if n.config.Markdown {
+		if message.Markdown {
 			msg := lark.NewMsgBuffer(lark.MsgInteractive)
+			card := b.Card(
+				b.Div().Text(b.Text(message.Content).LarkMd()),
+			).Indigo().Title(message.Subject)
 			om = msg.BindEmail(target).Card(card.String()).Build()
 		} else {
 			msg := lark.NewMsgBuffer(lark.MsgText)
-			om = msg.BindEmail(target).Text(n.config.Content).Build()
+			om = msg.BindEmail(target).Text(message.Content).Build()
 		}
-		if _, serr := bot.PostMessage(om); serr != nil {
+		if _, serr := n.bot.PostMessage(om); serr != nil {
 			err = serr
 			n.logger.Errorf("send lark to %s failed: %s", target, serr)
 		}
 	}
-	return err
+	return
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	gomail "gopkg.in/mail.v2"
 
 	"github.com/douban/sa-tools-go/libs/secrets"
@@ -25,39 +26,52 @@ type SMTPConfig struct {
 	} `yaml:"smtp"`
 }
 
-func (n *Notifier) SendEmail(targets ...string) error {
-	n.logger.Infof("send email to: %s", targets)
+type EmailNotifier struct {
+	config *SMTPConfig
+	logger *logrus.Logger
+}
 
-	cfg := EmailConfig{}
+func NewEmailNotifier(tenant string, logger *logrus.Logger) (*EmailNotifier, error) {
+	var cfg EmailConfig
 	err := secrets.Load("email", &cfg)
 	if err != nil {
-		return errors.Wrap(err, "load email secrets failed")
+		return nil, errors.Wrap(err, "load email secrets failed")
 	}
-
-	var tenant string
-	if n.config.Tenant != "" {
-		tenant = n.config.Tenant
-	} else {
+	if tenant == "" {
 		tenant = cfg.Default
 	}
-	tc, ok := cfg.Tenants[tenant]
+	config, ok := cfg.Tenants[tenant]
 	if !ok {
-		return fmt.Errorf("tenant %s not fond in email secret", tenant)
+		return nil, fmt.Errorf("tenant %s not fond in email secret", tenant)
+	}
+	if config.SMTP.Username == "" {
+		config.SMTP.Username = config.From
 	}
 
-	if n.config.From != "" {
-		tc.From = n.config.From
-	}
+	return &EmailNotifier{
+		config: config,
+		logger: logger,
+	}, nil
+}
 
-	if tc.SMTP.Username == "" {
-		tc.SMTP.Username = tc.From
+func (n *EmailNotifier) SendMessage(message *MessageConfig, targets ...string) error {
+	n.logger.Infof("send email to: %s", targets)
+
+	// NOTE: modified message itself
+	if message.From == "" {
+		message.From = n.config.From
 	}
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", tc.From)
+	m.SetHeader("From", n.config.From)
 	m.SetHeader("To", targets...)
-	m.SetHeader("Subject", n.config.Subject)
-	m.SetBody("text/plain", n.config.Content)
-	d := gomail.NewDialer(tc.SMTP.Host, tc.SMTP.Port, tc.SMTP.Username, tc.SMTP.Password)
+	m.SetHeader("Subject", message.Subject)
+	m.SetBody("text/plain", message.Content)
+	d := gomail.NewDialer(
+		n.config.SMTP.Host,
+		n.config.SMTP.Port,
+		n.config.SMTP.Username,
+		n.config.SMTP.Password,
+	)
 	return d.DialAndSend(m)
 }
