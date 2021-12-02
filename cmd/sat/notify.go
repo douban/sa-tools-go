@@ -21,16 +21,24 @@ func cmdNotify() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			notifier := notify.NewNotifier(config, logger)
 			if flagEmail != nil {
-				notifier.SendEmail(flagEmail...)
+				if err := notifier.SendEmail(flagEmail...); err != nil {
+					logger.Errorf("send email failed: %s", err)
+				}
 			}
 			if flagLark != nil {
-				notifier.SendLark(flagLark...)
+				if err := notifier.SendLark(flagLark...); err != nil {
+					logger.Errorf("send lark failed: %s", err)
+				}
 			}
 			if flagWecom != nil {
-				notifier.SendWecom(flagWecom...)
+				if err := notifier.SendWecom(flagWecom...); err != nil {
+					logger.Errorf("send wecom failed: %s", err)
+				}
 			}
 			if flagTelegram != nil {
-				notifier.SendTelegram(flagTelegram...)
+				if err := notifier.SendTelegram(flagTelegram...); err != nil {
+					logger.Errorf("send telegram failed: %s", err)
+				}
 			}
 		},
 	}

@@ -2,37 +2,62 @@ package notify
 
 import (
 	"fmt"
-	"net/smtp"
+
+	"github.com/pkg/errors"
+	gomail "gopkg.in/mail.v2"
 
 	"github.com/douban/sa-tools-go/libs/secrets"
-	"github.com/pkg/errors"
 )
 
 type EmailConfig struct {
+	Default string `yaml:"default"`
+
+	Tenants map[string]*SMTPConfig `yaml:"tenants"`
+}
+
+type SMTPConfig struct {
+	From string `yaml:"from"`
 	SMTP struct {
 		Host     string `yaml:"host"`
-		Port     uint16 `yaml:"port"`
+		Port     int    `yaml:"port"`
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"smtp"`
-	From string `yaml:"from"`
 }
 
-func (c *EmailConfig) GetSMTPAddr() string {
-	return fmt.Sprintf("%s:%d", c.SMTP.Host, c.SMTP.Port)
-}
+func (n *Notifier) SendEmail(targets ...string) error {
+	n.logger.Infof("send email to: %s", targets)
 
-func sendEmail(subject, content, from string, target []string) error {
 	cfg := EmailConfig{}
 	err := secrets.Load("email", &cfg)
 	if err != nil {
 		return errors.Wrap(err, "load email secrets failed")
 	}
-	if from == "" {
-		from = cfg.From
+
+	var tenant string
+	if n.config.Tenant != "" {
+		tenant = n.config.Tenant
+	} else {
+		tenant = cfg.Default
 	}
-	auth := smtp.PlainAuth("", cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Host)
+	tc, ok := cfg.Tenants[tenant]
+	if !ok {
+		return fmt.Errorf("tenant %s not fond in email secret", tenant)
+	}
 
-	return smtp.SendMail(cfg.GetSMTPAddr(), auth, from, target, []byte(content))
+	if n.config.From != "" {
+		tc.From = n.config.From
+	}
 
+	if tc.SMTP.Username == "" {
+		tc.SMTP.Username = tc.From
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", tc.From)
+	m.SetHeader("To", targets...)
+	m.SetHeader("Subject", n.config.Subject)
+	m.SetBody("text/plain", n.config.Content)
+	d := gomail.NewDialer(tc.SMTP.Host, tc.SMTP.Port, tc.SMTP.Username, tc.SMTP.Password)
+	return d.DialAndSend(m)
 }

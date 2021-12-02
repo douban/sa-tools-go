@@ -1,6 +1,8 @@
 package notify
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+)
 
 type NotifierConfig struct {
 	Subject  string
@@ -22,22 +24,17 @@ func NewNotifier(config *NotifierConfig, logger *logrus.Logger) *Notifier {
 	}
 }
 
-func (n *Notifier) SendEmail(targets ...string) error {
-	n.logger.Debugf("send email to: %s", targets)
-	return sendEmail(n.config.Subject, n.config.Content, n.config.From, targets)
-}
-
 func (n *Notifier) SendWecom(targets ...string) error {
-	n.logger.Debugf("send wecom to: %s", targets)
+	n.logger.Infof("send wecom to: %s", targets)
 	return nil
 }
 
 func (n *Notifier) SendLark(targets ...string) error {
-	n.logger.Debugf("send lark to: %s", targets)
+	n.logger.Infof("send lark to: %s", targets)
 	return nil
 }
 
 func (n *Notifier) SendTelegram(targets ...string) error {
-	n.logger.Debugf("send telegram to: %s", targets)
+	n.logger.Infof("send telegram to: %s", targets)
 	return nil
 }
