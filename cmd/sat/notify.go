@@ -19,26 +19,20 @@ func sendMessage(name, tenant string, message *notify.MessageConfig, targets []s
 	}
 }
 
-type notifyTargets struct {
-	Tenant string
-
-	Email    []string
-	Lark     []string
-	Wecom    []string
-	Telegram []string
-}
-
-func addNotifyTargetFlags(f *pflag.FlagSet, a *notifyTargets) {
+func addNotifyTargetFlags(f *pflag.FlagSet, a *notify.Targets) {
 	f.StringVarP(&a.Tenant, "tenant", "t", "", "company user in, used when multiple company or tenant is configured")
 	f.StringSliceVarP(&a.Email, "email", "", nil, "")
 	f.StringSliceVarP(&a.Lark, "lark", "", nil, "")
-	f.StringSliceVarP(&a.Wecom, "wecom", "", nil, "")
-	f.StringSliceVarP(&a.Telegram, "telegram", "", nil, "")
+	f.StringSliceVarP(&a.Wework, "wework", "", nil, "not supported yet")
+	f.StringSliceVarP(&a.Sms, "sms", "", nil, "not supported yet")
+	f.StringSliceVarP(&a.Pushbullet, "pushbullet", "", nil, "not supported yet")
+	f.StringSliceVarP(&a.Pushover, "pushover", "", nil, "not supported yet")
+	f.StringSliceVarP(&a.Telegram, "telegram", "", nil, "not supported yet")
 }
 
 func cmdNotify() *cobra.Command {
 	message := &notify.MessageConfig{}
-	targets := &notifyTargets{}
+	targets := &notify.Targets{}
 
 	cmd := &cobra.Command{
 		Use: "notify",

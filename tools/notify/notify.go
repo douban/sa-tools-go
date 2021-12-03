@@ -17,6 +17,20 @@ type MessageConfig struct {
 	Markdown bool
 }
 
+type Targets struct {
+	Tenant string
+
+	Email []string
+	Lark  []string
+
+	// TODO: to be supported
+	Wework     []string
+	Sms        []string
+	Pushbullet []string
+	Pushover   []string
+	Telegram   []string
+}
+
 func GetNotifier(name, tenant string) (Notifier, error) {
 	switch name {
 	case "email":

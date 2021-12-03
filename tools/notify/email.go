@@ -94,8 +94,6 @@ Comment: [%s] %s
 
 Acknowledge: %s
 `
-	subject := fmt.Sprintf("Host %s alert for %s(%s)!",
-		alert.HostState, alert.HostName, alert.HostAddress)
 	content := fmt.Sprintf(
 		contentTmpl,
 		alert.NotificationType,
@@ -109,15 +107,10 @@ Acknowledge: %s
 		getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName),
 	)
 
-	return n.sendMail(subject, content, n.config.AlertFrom, targets)
+	return n.sendMail(alert.Subject(), content, n.config.AlertFrom, targets)
 }
 
 func (n *EmailNotifier) SendServiceAlert(alert *ServiceAlertConfig, targets ...string) error {
-	subject := fmt.Sprintf("%s - %s/%s is %s",
-		alert.NotificationType,
-		alert.HostDisplayName,
-		alert.ServiceDisplayName,
-		alert.ServiceState)
 	contentTmpl := `***** Icinga *****
 
 Type: %s
@@ -153,5 +146,5 @@ Acknowledge: %s
 		getAckLink(alert.AckLinkURL, alert.ServiceName, alert.HostName, alert.ContactName),
 	)
 
-	return n.sendMail(subject, content, n.config.AlertFrom, targets)
+	return n.sendMail(alert.Subject(), content, n.config.AlertFrom, targets)
 }

@@ -19,7 +19,7 @@ func sendServiceAlert(name, tenant string, alert *notify.ServiceAlertConfig, tar
 }
 
 func cmdAlertService() *cobra.Command {
-	targets := &notifyTargets{}
+	targets := &notify.Targets{}
 
 	cmd := &cobra.Command{
 		Use: "service",

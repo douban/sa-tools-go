@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/pkg/errors"
@@ -39,8 +41,20 @@ func HostAlertFromEnv() (*HostAlertConfig, error) {
 	if err := env.Parse(&alert); err != nil {
 		return nil, errors.Wrap(err, "parse host alert from env error")
 	}
-	alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	if alert.NotificationType == "PROBLEM" {
+		alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	}
 	return &alert, nil
+}
+
+func (c *HostAlertConfig) Subject() string {
+	return fmt.Sprintf("Host %s alert for %s(%s)!",
+		c.HostState, c.HostName, c.HostAddress)
+}
+
+func (c *HostAlertConfig) Duration() string {
+	du, _ := strconv.ParseFloat(c.HostDurationSec, 64)
+	return (time.Duration(du) * time.Second).String()
 }
 
 type ServiceAlertConfig struct {
@@ -74,8 +88,23 @@ func ServiceAlertFromEnv() (*ServiceAlertConfig, error) {
 		return nil, errors.Wrap(err, "parse host alert from env error")
 	}
 	alert.icingaWebURL = getIcingaLink(alert.IcingaWebBaseURL, alert.HostName, alert.ServiceName)
-	alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	if alert.NotificationType == "PROBLEM" {
+		alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	}
 	return &alert, nil
+}
+
+func (c *ServiceAlertConfig) Subject() string {
+	return fmt.Sprintf("%s - %s/%s is %s",
+		c.NotificationType,
+		c.HostDisplayName,
+		c.ServiceDisplayName,
+		c.ServiceState)
+}
+
+func (c *ServiceAlertConfig) Duration() string {
+	du, _ := strconv.ParseFloat(c.ServiceDurationSec, 64)
+	return (time.Duration(du) * time.Second).String()
 }
 
 func getAckLink(apiURL, service, host, user string) string {

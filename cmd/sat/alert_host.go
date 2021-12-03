@@ -19,7 +19,7 @@ func sendHostAlert(name, tenant string, alert *notify.HostAlertConfig, targets [
 }
 
 func cmdAlertHost() *cobra.Command {
-	targets := &notifyTargets{}
+	targets := &notify.Targets{}
 
 	cmd := &cobra.Command{
 		Use: "host",
