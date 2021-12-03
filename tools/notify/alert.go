@@ -85,11 +85,11 @@ type ServiceAlertConfig struct {
 func ServiceAlertFromEnv() (*ServiceAlertConfig, error) {
 	var alert ServiceAlertConfig
 	if err := env.Parse(&alert); err != nil {
-		return nil, errors.Wrap(err, "parse host alert from env error")
+		return nil, errors.Wrap(err, "parse service alert from env error")
 	}
 	alert.icingaWebURL = getIcingaLink(alert.IcingaWebBaseURL, alert.HostName, alert.ServiceName)
 	if alert.NotificationType == "PROBLEM" {
-		alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+		alert.ackLink = getAckLink(alert.AckLinkURL, alert.ServiceName, alert.HostName, alert.ContactName)
 	}
 	return &alert, nil
 }
