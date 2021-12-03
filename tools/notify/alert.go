@@ -20,14 +20,15 @@ type HostAlertConfig struct {
 	HostName               string `env:"HOSTNAME"`
 	HostOutput             string `env:"HOSTOUTPUT"`
 	HostState              string `env:"HOSTSTATE"`
+	HostDurationSec        string `env:"HOSTDURATIONSEC"`
 	LongDateTime           string `env:"LONGDATETIME"`
 	NotificationAuthorName string `env:"NOTIFICATIONAUTHORNAME"`
 	NotificationComment    string `env:"NOTIFICATIONCOMMENT"`
 	NotificationType       string `env:"NOTIFICATIONTYPE"`
+	ContactName            string `env:"CONTACTNAME"`
 
 	// custom
-	ContactName string `env:"CONTACTNAME"`
-	AckLinkURL  string `env:"ACKLINKURL"`
+	AckLinkURL string `env:"ACKLINKURL"`
 
 	// generated
 	ackLink string
@@ -54,9 +55,10 @@ type ServiceAlertConfig struct {
 	ServiceName            string `env:"SERVICENAME"`
 	ServiceOutput          string `env:"SERVICEOUTPUT"`
 	ServiceState           string `env:"SERVICESTATE"`
+	ServiceDurationSec     string `env:"SERVICEDURATIONSEC"`
+	ContactName            string `env:"CONTACTNAME"`
 
 	// custom
-	ContactName      string `env:"CONTACTNAME"`
 	IcingaWebBaseURL string `env:"ICINGAWEBBASEURL"`
 	ServiceWiki      string `env:"SERVICEWIKI"`
 	AckLinkURL       string `env:"ACKLINKURL"`
