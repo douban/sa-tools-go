@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/douban/sa-tools-go/tools/notify"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/spf13/cobra"
 )
 
@@ -25,15 +24,15 @@ func cmdAlertHost() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "host",
 		Run: func(cmd *cobra.Command, args []string) {
-			var alert notify.HostAlertConfig
-			if err := env.Parse(&alert); err != nil {
-				logger.Fatalf("parse icinga host alert from env failed: %s", err)
+			alert, err := notify.HostAlertFromEnv()
+			if err != nil {
+				logger.Fatalln(err)
 			}
 			if targets.Email != nil {
-				sendHostAlert("email", targets.Tenant, &alert, targets.Email)
+				sendHostAlert("email", targets.Tenant, alert, targets.Email)
 			}
 			if targets.Lark != nil {
-				sendHostAlert("lark", targets.Tenant, &alert, targets.Lark)
+				sendHostAlert("lark", targets.Tenant, alert, targets.Lark)
 			}
 		},
 	}

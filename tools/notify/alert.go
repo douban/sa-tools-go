@@ -5,6 +5,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/caarlos0/env/v6"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -23,9 +26,20 @@ type HostAlertConfig struct {
 	NotificationType       string `env:"NOTIFICATIONTYPE"`
 
 	// custom
-	ContactName      string `env:"CONTACTNAME"`
-	IcingaWebBaseURL string `env:"ICINGAWEBBASEURL"`
-	AckLinkURL       string `env:"ACKLINKURL"`
+	ContactName string `env:"CONTACTNAME"`
+	AckLinkURL  string `env:"ACKLINKURL"`
+
+	// generated
+	ackLink string
+}
+
+func HostAlertFromEnv() (*HostAlertConfig, error) {
+	var alert HostAlertConfig
+	if err := env.Parse(&alert); err != nil {
+		return nil, errors.Wrap(err, "parse host alert from env error")
+	}
+	alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	return &alert, nil
 }
 
 type ServiceAlertConfig struct {
@@ -46,12 +60,20 @@ type ServiceAlertConfig struct {
 	IcingaWebBaseURL string `env:"ICINGAWEBBASEURL"`
 	ServiceWiki      string `env:"SERVICEWIKI"`
 	AckLinkURL       string `env:"ACKLINKURL"`
+
+	// generated
+	ackLink      string
+	icingaWebURL string
 }
 
-type AckInfo struct {
-	Service string `json:"service"`
-	Host    string `json:"host"`
-	User    string `json:"user"`
+func ServiceAlertFromEnv() (*ServiceAlertConfig, error) {
+	var alert ServiceAlertConfig
+	if err := env.Parse(&alert); err != nil {
+		return nil, errors.Wrap(err, "parse host alert from env error")
+	}
+	alert.icingaWebURL = getIcingaLink(alert.IcingaWebBaseURL, alert.HostName, alert.ServiceName)
+	alert.ackLink = getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName)
+	return &alert, nil
 }
 
 func getAckLink(apiURL, service, host, user string) string {

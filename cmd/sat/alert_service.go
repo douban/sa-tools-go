@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/douban/sa-tools-go/tools/notify"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/spf13/cobra"
 )
 
@@ -25,17 +24,16 @@ func cmdAlertService() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "service",
 		Run: func(cmd *cobra.Command, args []string) {
-			var alert notify.ServiceAlertConfig
-			if err := env.Parse(&alert); err != nil {
-				logger.Fatalf("parse icinga service alert from env failed: %s", err)
+			alert, err := notify.ServiceAlertFromEnv()
+			if err != nil {
+				logger.Fatalln(err)
 			}
 			if targets.Email != nil {
-				sendServiceAlert("email", targets.Tenant, &alert, targets.Email)
+				sendServiceAlert("email", targets.Tenant, alert, targets.Email)
 			}
 			if targets.Lark != nil {
-				sendServiceAlert("lark", targets.Tenant, &alert, targets.Lark)
+				sendServiceAlert("lark", targets.Tenant, alert, targets.Lark)
 			}
-
 		},
 	}
 	addNotifyTargetFlags(cmd.Flags(), targets)
