@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	gomail "gopkg.in/mail.v2"
 
 	"github.com/douban/sa-tools-go/libs/secrets"
@@ -17,8 +16,9 @@ type EmailConfig struct {
 }
 
 type SMTPConfig struct {
-	From string `yaml:"from"`
-	SMTP struct {
+	From      string `yaml:"from"`
+	AlertFrom string `yaml:"alert_from"`
+	SMTP      struct {
 		Host     string `yaml:"host"`
 		Port     int    `yaml:"port"`
 		Username string `yaml:"username"`
@@ -28,10 +28,9 @@ type SMTPConfig struct {
 
 type EmailNotifier struct {
 	config *SMTPConfig
-	logger *logrus.Logger
 }
 
-func NewEmailNotifier(tenant string, logger *logrus.Logger) (*EmailNotifier, error) {
+func NewEmailNotifier(tenant string) (*EmailNotifier, error) {
 	var cfg EmailConfig
 	err := secrets.Load("email", &cfg)
 	if err != nil {
@@ -47,26 +46,20 @@ func NewEmailNotifier(tenant string, logger *logrus.Logger) (*EmailNotifier, err
 	if config.SMTP.Username == "" {
 		config.SMTP.Username = config.From
 	}
+	if config.AlertFrom == "" {
+		config.AlertFrom = config.From
+	}
 
 	return &EmailNotifier{
 		config: config,
-		logger: logger,
 	}, nil
 }
-
-func (n *EmailNotifier) SendMessage(message *MessageConfig, targets ...string) error {
-	n.logger.Infof("send email to: %s", targets)
-
-	// NOTE: modified message itself
-	if message.From == "" {
-		message.From = n.config.From
-	}
-
+func (n *EmailNotifier) sendMail(subject, content, from string, to []string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", n.config.From)
-	m.SetHeader("To", targets...)
-	m.SetHeader("Subject", message.Subject)
-	m.SetBody("text/plain", message.Content)
+	m.SetHeader("From", from)
+	m.SetHeader("To", to...)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/plain", content)
 	d := gomail.NewDialer(
 		n.config.SMTP.Host,
 		n.config.SMTP.Port,
@@ -74,4 +67,91 @@ func (n *EmailNotifier) SendMessage(message *MessageConfig, targets ...string) e
 		n.config.SMTP.Password,
 	)
 	return d.DialAndSend(m)
+}
+
+func (n *EmailNotifier) SendMessage(message *MessageConfig, targets ...string) error {
+	// NOTE: modified message itself
+	if message.From == "" {
+		message.From = n.config.From
+	}
+	return n.sendMail(message.Subject, message.Content, message.From, targets)
+}
+
+func (n *EmailNotifier) SendHostAlert(alert *HostAlertConfig, targets ...string) error {
+	contentTmpl := `***** Icinga *****
+
+Type: %s
+
+Host: %s
+Address: %s
+State: %s
+
+Date/Time: %s
+
+Additional: %s
+
+Comment: [%s] %s
+
+Acknowledge: %s
+`
+	subject := fmt.Sprintf("Host %s alert for %s(%s)!",
+		alert.HostState, alert.HostName, alert.HostAddress)
+	content := fmt.Sprintf(
+		contentTmpl,
+		alert.NotificationType,
+		alert.HostDisplayName,
+		alert.HostAddress,
+		alert.HostState,
+		alert.LongDateTime,
+		alert.HostOutput,
+		alert.NotificationAuthorName,
+		alert.NotificationComment,
+		getAckLink(alert.AckLinkURL, "", alert.HostName, alert.ContactName),
+	)
+
+	return n.sendMail(subject, content, n.config.AlertFrom, targets)
+}
+
+func (n *EmailNotifier) SendServiceAlert(alert *ServiceAlertConfig, targets ...string) error {
+	subject := fmt.Sprintf("%s - %s/%s is %s",
+		alert.NotificationType,
+		alert.HostDisplayName,
+		alert.ServiceDisplayName,
+		alert.ServiceState)
+	contentTmpl := `***** Icinga *****
+
+Type: %s
+
+Service: %s
+Host: %s
+Address: %s
+State: %s
+
+Date/Time: %s
+
+Additional: %s
+
+Comment: [%s] %s
+
+Link: %s
+Wiki: %s
+Acknowledge: %s
+`
+	content := fmt.Sprintf(
+		contentTmpl,
+		alert.NotificationType,
+		alert.ServiceDisplayName,
+		alert.HostDisplayName,
+		alert.HostAddress,
+		alert.ServiceState,
+		alert.LongDateTime,
+		alert.ServiceOutput,
+		alert.NotificationAuthorName,
+		alert.NotificationComment,
+		getIcingaLink(alert.IcingaWebBaseURL, alert.HostName, alert.ServiceName),
+		alert.ServiceWiki,
+		getAckLink(alert.AckLinkURL, alert.ServiceName, alert.HostName, alert.ContactName),
+	)
+
+	return n.sendMail(subject, content, n.config.AlertFrom, targets)
 }

@@ -2,54 +2,60 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/douban/sa-tools-go/tools/notify"
 )
 
-func sendNotification(name, tenant string, message *notify.MessageConfig, target []string) {
-	notifier, err := notify.GetNotifier(name, tenant, logger)
-	if err != nil {
+func sendMessage(name, tenant string, message *notify.MessageConfig, targets []string) {
+	if notifier, err := notify.GetNotifier(name, tenant); err != nil {
 		logger.Errorf("get %s notifier failed: %s", name, err)
+	} else {
+		if err := notifier.SendMessage(message, targets...); err != nil {
+			logger.Errorf("send %s failed: %s", name, err)
+		} else {
+			logger.Infof("sent %s message to: %s", name, targets)
+		}
 	}
-	err = notifier.SendMessage(message, target...)
-	if err != nil {
-		logger.Errorf("send %s failed: %s", name, err)
-	}
+}
+
+type notifyTargets struct {
+	Tenant string
+
+	Email    []string
+	Lark     []string
+	Wecom    []string
+	Telegram []string
+}
+
+func addNotifyTargetFlags(f *pflag.FlagSet, a *notifyTargets) {
+	f.StringVarP(&a.Tenant, "tenant", "t", "", "company user in, used when multiple company or tenant is configured")
+	f.StringSliceVarP(&a.Email, "email", "", nil, "")
+	f.StringSliceVarP(&a.Lark, "lark", "", nil, "")
+	f.StringSliceVarP(&a.Wecom, "wecom", "", nil, "")
+	f.StringSliceVarP(&a.Telegram, "telegram", "", nil, "")
 }
 
 func cmdNotify() *cobra.Command {
 	message := &notify.MessageConfig{}
-
-	var (
-		flagEmail    []string
-		flagLark     []string
-		flagWecom    []string
-		flagTelegram []string
-		flagTenant   string
-	)
+	targets := &notifyTargets{}
 
 	cmd := &cobra.Command{
 		Use: "notify",
 		Run: func(cmd *cobra.Command, args []string) {
-			if flagEmail != nil {
-				sendNotification("email", flagTenant, message, flagEmail)
+			if targets.Email != nil {
+				sendMessage("email", targets.Tenant, message, targets.Email)
 			}
-			if flagLark != nil {
-				sendNotification("lark", flagTenant, message, flagLark)
+			if targets.Lark != nil {
+				sendMessage("lark", targets.Tenant, message, targets.Lark)
 			}
-
 		},
 	}
+	addNotifyTargetFlags(cmd.Flags(), targets)
 	cmd.Flags().StringVarP(&message.Subject, "subject", "s", "sent from sa-notify", "")
 	cmd.Flags().StringVarP(&message.Content, "content", "c", "", "")
 	cmd.Flags().StringVarP(&message.From, "from", "", "", "from address, currently only works for email")
 	cmd.Flags().BoolVarP(&message.Markdown, "markdown", "", false, "use markdown rendering, only lark & wework & telegram supported")
-
-	cmd.Flags().StringVarP(&flagTenant, "tenant", "t", "", "company user in, used when multiple company or tenant is configured")
-	cmd.Flags().StringSliceVarP(&flagEmail, "email", "", nil, "")
-	cmd.Flags().StringSliceVarP(&flagLark, "lark", "", nil, "")
-	cmd.Flags().StringSliceVarP(&flagWecom, "wecom", "", nil, "")
-	cmd.Flags().StringSliceVarP(&flagTelegram, "telegram", "", nil, "")
 
 	return cmd
 }

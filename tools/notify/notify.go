@@ -2,12 +2,12 @@ package notify
 
 import (
 	"fmt"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Notifier interface {
 	SendMessage(message *MessageConfig, targets ...string) error
+	SendHostAlert(alert *HostAlertConfig, targets ...string) error
+	SendServiceAlert(alert *ServiceAlertConfig, targets ...string) error
 }
 
 type MessageConfig struct {
@@ -17,12 +17,12 @@ type MessageConfig struct {
 	Markdown bool
 }
 
-func GetNotifier(name, tenant string, logger *logrus.Logger) (Notifier, error) {
+func GetNotifier(name, tenant string) (Notifier, error) {
 	switch name {
 	case "email":
-		return NewEmailNotifier(tenant, logger)
+		return NewEmailNotifier(tenant)
 	case "lark":
-		return NewLarkNotifier(tenant, logger)
+		return NewLarkNotifier(tenant)
 	}
 
 	return nil, fmt.Errorf("notifier %s not supported", name)

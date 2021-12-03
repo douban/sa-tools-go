@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-lark/lark"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/douban/sa-tools-go/libs/secrets"
 )
@@ -24,11 +23,10 @@ type LarkConfig struct {
 }
 
 type LarkNotifier struct {
-	bot    *lark.Bot
-	logger *logrus.Logger
+	bot *lark.Bot
 }
 
-func NewLarkNotifier(tenant string, logger *logrus.Logger) (*LarkNotifier, error) {
+func NewLarkNotifier(tenant string) (*LarkNotifier, error) {
 	var cfg LarkTenantConfig
 	err := secrets.Load("lark", &cfg)
 	if err != nil {
@@ -49,15 +47,13 @@ func NewLarkNotifier(tenant string, logger *logrus.Logger) (*LarkNotifier, error
 	}
 
 	return &LarkNotifier{
-		bot:    bot,
-		logger: logger,
+		bot: bot,
 	}, nil
 }
 
-func (n *LarkNotifier) SendMessage(message *MessageConfig, targets ...string) (err error) {
-	n.logger.Infof("send email to: %s", targets)
-
+func (n *LarkNotifier) SendMessage(message *MessageConfig, targets ...string) error {
 	b := lark.NewCardBuilder()
+	var errs []error
 	for _, target := range targets {
 		var om lark.OutcomingMessage
 		if message.Markdown {
@@ -71,9 +67,19 @@ func (n *LarkNotifier) SendMessage(message *MessageConfig, targets ...string) (e
 			om = msg.BindEmail(target).Text(message.Content).Build()
 		}
 		if _, serr := n.bot.PostMessage(om); serr != nil {
-			err = serr
-			n.logger.Errorf("send lark to %s failed: %s", target, serr)
+			errs = append(errs, serr)
 		}
 	}
-	return
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%v", errs)
+}
+
+func (n *LarkNotifier) SendHostAlert(alert *HostAlertConfig, targets ...string) error {
+	return nil
+}
+
+func (n *LarkNotifier) SendServiceAlert(alert *ServiceAlertConfig, targets ...string) error {
+	return nil
 }
